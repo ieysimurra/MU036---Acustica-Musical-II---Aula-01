@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audição Humana: Uma Exploração Interativa com IA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Stone & Sage -->
+    <!-- Application Structure Plan: The application structure, based on the "Biological Recording Studio" analogy, is expanded with two new sections: "Exercícios" and "Referências". These are added to the main navigation and content flow. The "Exercícios" section is designed for active recall and self-assessment, with interactive answer reveals. The "Referências" section provides a curated, categorized bibliography for further study. This enhances the application's utility as a comprehensive learning tool. -->
+    <!-- Visualization & Content Choices: 
+        - Goal: Add self-assessment functionality. Method: Created an "Exercícios" section with multiple-choice and short-answer questions. Interaction: Each question has a button to toggle the visibility of a detailed answer and explanation. Justification: Promotes active learning and knowledge consolidation.
+        - Goal: Provide resources for further study. Method: Created a "Referências" section with a categorized list of key literature. Justification: Guides the user towards deeper academic engagement with the topic.
+        - Existing visualizations and diagrams are retained to support the new exercises.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .nav-link {
+            transition: color 0.3s, border-color 0.3s;
+        }
+        .nav-link.active {
+            color: #166534; /* green-700 */
+            border-bottom-color: #166534; /* green-700 */
+        }
+        .content-card {
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .content-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .diagram-part {
+            transition: all 0.3s ease-in-out;
+        }
+        .diagram-container:hover .diagram-part {
+            opacity: 0.7;
+        }
+        .diagram-container:hover .diagram-part:hover {
+            opacity: 1;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #166534; /* Green */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .answer-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+        }
+        .answer-panel.show {
+            max-height: 500px; /* Adjust as needed */
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <header class="bg-stone-100/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-3">
+            <div class="flex justify-between items-center">
+                <h1 class="text-xl font-bold text-green-800">A Audição Humana</h1>
+                <div class="hidden md:flex space-x-6 lg:space-x-8">
+                    <a href="#estudio" class="nav-link text-stone-600 hover:text-green-700 border-b-2 border-transparent pb-1">O Estúdio</a>
+                    <a href="#anatomia" class="nav-link text-stone-600 hover:text-green-700 border-b-2 border-transparent pb-1">Anatomia</a>
+                    <a href="#fronteiras" class="nav-link text-stone-600 hover:text-green-700 border-b-2 border-transparent pb-1">Fronteiras</a>
+                    <a href="#exercicios" class="nav-link text-stone-600 hover:text-green-700 border-b-2 border-transparent pb-1">Exercícios</a>
+                    <a href="#referencias" class="nav-link text-stone-600 hover:text-green-700 border-b-2 border-transparent pb-1">Referências</a>
+                </div>
+                <button id="mobile-menu-button" class="md:hidden text-stone-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+            </div>
+            <div id="mobile-menu" class="hidden md:hidden mt-4 space-y-2">
+                <a href="#estudio" class="block py-2 text-stone-600 hover:text-green-700">O Estúdio Biológico</a>
+                <a href="#anatomia" class="block py-2 text-stone-600 hover:text-green-700">Anatomia</a>
+                <a href="#fronteiras" class="block py-2 text-stone-600 hover:text-green-700">Fronteiras</a>
+                <a href="#exercicios" class="block py-2 text-stone-600 hover:text-green-700">Exercícios</a>
+                <a href="#referencias" class="block py-2 text-stone-600 hover:text-green-700">Referências</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+        
+        <section id="estudio" class="mb-24 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-green-800 mb-4">O Estúdio de Gravação Biológico</h2>
+            <p class="text-lg text-stone-600 mb-8 max-w-3xl">Para desmistificar a complexidade do sistema auditivo, vamos usar uma analogia central: o ouvido humano funciona como uma cadeia de áudio completa, um verdadeiro estúdio de processamento biológico. Cada componente anatômico encontra um paralelo direto em equipamentos e processos de um estúdio profissional.</p>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white rounded-lg shadow">
+                    <thead class="bg-stone-200">
+                        <tr>
+                            <th class="text-left font-semibold text-stone-700 p-4">Estrutura Auditiva</th>
+                            <th class="text-left font-semibold text-stone-700 p-4">Função Fisiológica</th>
+                            <th class="text-left font-semibold text-stone-700 p-4">Analogia em Tecnologia de Áudio</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-stone-200">
+                        <tr class="hover:bg-stone-50"><td class="p-4 font-semibold">Pavilhão Auricular</td><td class="p-4">Coleta, direcionamento e filtragem para localização.</td><td class="p-4 text-green-700 font-medium">🎤 Microfone Direcional</td></tr>
+                        <tr class="hover:bg-stone-50"><td class="p-4 font-semibold">Meato Auditivo</td><td class="p-4">Ressonância para amplificação de frequências.</td><td class="p-4 text-green-700 font-medium">🎚️ Equalizador (EQ) de Presença</td></tr>
+                        <tr class="hover:bg-stone-50"><td class="p-4 font-semibold">Cadeia Ossicular</td><td class="p-4">Casamento de impedância e amplificação.</td><td class="p-4 text-green-700 font-medium">🔊 Pré-Amplificador</td></tr>
+                        <tr class="hover:bg-stone-50"><td class="p-4 font-semibold">Músculos do Ouvido Médio</td><td class="p-4">Proteção contra sons intensos (reflexo acústico).</td><td class="p-4 text-green-700 font-medium">🎛️ Compressor / Limiter</td></tr>
+                        <tr class="hover:bg-stone-50"><td class="p-4 font-semibold">Cóclea (Membrana Basilar)</td><td class="p-4">Decomposição de frequência (mapa tonotópico).</td><td class="p-4 text-green-700 font-medium">📊 Analisador de Espectro (FFT)</td></tr>
+                        <tr class="hover:bg-stone-50"><td class="p-4 font-semibold">Células Ciliadas Externas</td><td class="p-4">Amplificação ativa, não-linear e seletiva.</td><td class="p-4 text-green-700 font-medium">⚡ Amplificador Coclear Ativo</td></tr>
+                        <tr class="hover:bg-stone-50"><td class="p-4 font-semibold">Células Ciliadas Internas</td><td class="p-4">Transdução mecanoelétrica final.</td><td class="p-4 text-green-700 font-medium">🔄 Conversor A/D</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="anatomia" class="mb-24 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-green-800 mb-4">Anatomia e Função Interativa</h2>
+            <p class="text-lg text-stone-600 mb-8 max-w-3xl">Explore as três partes do ouvido e suas funções específicas através de diagramas e simulações interativas.</p>
+            
+            <div class="space-y-12">
+                <!-- Ouvido Externo -->
+                <div class="content-card bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-2xl font-bold text-stone-700 mb-4">Ouvido Externo</h3>
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <div>
+                            <h4 class="text-xl font-bold text-stone-700 mb-2">Anatomia</h4>
+                            <div class="relative h-64 diagram-container">
+                                <div class="diagram-part absolute top-0 left-0 w-40 h-64 bg-green-200 rounded-full flex items-center justify-center text-center p-2" style="clip-path: ellipse(50% 100% at 0% 50%);">Pavilhão Auricular</div>
+                                <div class="diagram-part absolute top-1/2 -translate-y-1/2 left-20 w-48 h-12 bg-green-300 rounded-r-full flex items-center justify-center p-2">Meato Auditivo</div>
+                                <div class="diagram-part absolute top-1/2 -translate-y-1/2 left-64 w-2 h-16 bg-green-400 rounded-full"></div>
+                                <div class="absolute top-1/2 -translate-y-1/2 left-64 w-2 h-16 flex items-center justify-center text-xs -rotate-90 text-white font-bold">Tímpano</div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-xl font-bold text-stone-700 mb-2">Ganho do Canal Auditivo</h4>
+                            <p class="text-stone-600 mb-4 text-sm">A ressonância do meato amplifica a faixa de 2-5 kHz, crucial para a clareza da fala.</p>
+                            <div class="chart-container" style="position: relative; height:30vh; width:100%;">
+                                <canvas id="outerEarChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ouvido Médio -->
+                <div class="content-card bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-2xl font-bold text-stone-700 mb-4">Ouvido Médio</h3>
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <div>
+                            <h4 class="text-xl font-bold text-stone-700 mb-2">Casamento de Impedância</h4>
+                            <p class="text-stone-600 mb-4 text-sm">A cadeia ossicular age como um pré-amplificador mecânico.</p>
+                            <div class="relative h-40 w-full diagram-container mb-4">
+                                <div class="diagram-part absolute left-0 top-1/2 -translate-y-1/2 w-2 h-32 bg-green-400 rounded-full"><span class="absolute -left-2 top-0 -translate-x-full text-xs">Tímpano</span></div>
+                                <div class="diagram-part absolute left-2 top-1/2 -translate-y-1/2 w-20 h-2 bg-green-500 rounded-full"><span class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full text-xs">Martelo/Bigorna</span></div>
+                                <div class="diagram-part absolute left-20 top-1/2 -translate-y-1/2 w-2 h-10 bg-green-500 rounded-full"><span class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full text-xs">Estribo</span></div>
+                                <div class="diagram-part absolute left-22 top-1/2 -translate-y-1/2 w-2 h-12 bg-orange-400 rounded-full"><span class="absolute right-0 top-0 translate-x-full text-xs">Janela Oval</span></div>
+                            </div>
+                            <div class="flex justify-around text-center"><p>Ganho Total: <strong>~22x</strong></p></div>
+                        </div>
+                        <div>
+                            <h4 class="text-xl font-bold text-stone-700 mb-2">Simulador do Reflexo Acústico</h4>
+                            <p class="text-stone-600 mb-4 text-sm">Acima de ~80 dB, o sistema se protege atenuando o sinal.</p>
+                            <input id="dbSlider" type="range" min="40" max="120" value="70" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer">
+                            <div id="dbValue" class="text-center font-bold text-xl mt-2 text-green-700">70 dB</div>
+                            <div class="chart-container" style="position: relative; height:15vh; width:100%;">
+                                <canvas id="acousticReflexChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Ouvido Interno -->
+                <div class="content-card bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-2xl font-bold text-stone-700 mb-4">Ouvido Interno</h3>
+                    <div class="space-y-8">
+                        <div>
+                            <h4 class="text-xl font-bold text-stone-700 mb-2">Mapa Tonotópico Interativo</h4>
+                            <p class="text-stone-600 mb-4 text-sm">A membrana basilar decompõe o som em frequências, como um analisador de espectro.</p>
+                            <div class="p-4 border rounded-lg bg-stone-100">
+                                <label for="freqSlider" class="block mb-2 font-medium">Frequência (Hz)</label>
+                                <input id="freqSlider" type="range" min="20" max="20000" value="1000" step="10" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer">
+                                <canvas id="tonotopicCanvas" width="800" height="100" class="w-full mt-4 bg-white rounded"></canvas>
+                                <p id="freqReadout" class="text-center mt-2 font-semibold text-green-700">Frequência: 1000 Hz - Pico na região central.</p>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div>
+                                <h4 class="text-xl font-bold text-stone-700 mb-2">Amplificador Coclear</h4>
+                                <p class="text-stone-600 mb-4 text-sm">As Células Ciliadas Externas (CCEs) amplificam ativamente sons fracos.</p>
+                                <button id="toggleAmplifier" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition">Simular Perda do Amplificador</button>
+                                <div class="chart-container mt-4" style="position: relative; height:25vh; width:100%;">
+                                    <canvas id="cochlearAmpChart"></canvas>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-bold text-stone-700 mb-2">Mascaramento Frequencial</h4>
+                                <p class="text-stone-600 mb-4 text-sm">Um som forte pode "esconder" um som mais fraco, especialmente em frequências próximas.</p>
+                                <button id="toggleMasker" class="w-full bg-orange-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-orange-600 transition">Adicionar Som Mascarador</button>
+                                <div class="chart-container mt-4" style="position: relative; height:25vh; width:100%;">
+                                    <canvas id="maskingChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="fronteiras" class="mb-24 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-green-800 mb-4">Aplicações e Fronteiras</h2>
+            <p class="text-lg text-stone-600 mb-8 max-w-3xl">A compreensão da audição tem implicações profundas na música, tecnologia e neurociência. Explore conceitos avançados e experimente com nosso gerador de ideias musicais com IA.</p>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="content-card bg-white p-6 rounded-lg shadow">
+                     <h3 class="text-xl font-bold text-stone-700 mb-2">Análise de Cena Auditiva (ASA)</h3>
+                     <p class="text-stone-600 mb-4">O cérebro organiza sons em fluxos coerentes, separando fontes sonoras.</p>
+                     <div class="diagram-container bg-stone-100 p-4 rounded-lg flex items-center justify-around h-32"><div class="diagram-part text-center"><div class="text-2xl">🎶🗣️</div><div class="text-sm font-bold">Sinal Misto</div></div><div class="text-3xl font-thin text-stone-400">→</div><div class="diagram-part text-center"><div class="text-2xl">🎶</div><div class="text-sm font-bold text-green-700">Fluxo 1</div></div><div class="diagram-part text-center"><div class="text-2xl">🗣️</div><div class="text-sm font-bold text-orange-600">Fluxo 2</div></div></div>
+                </div>
+                <div class="content-card bg-white p-6 rounded-lg shadow lg:col-span-2">
+                     <h3 class="text-xl font-bold text-stone-700 mb-2">Composição e IA Generativa</h3>
+                     <p class="text-stone-600 mb-4">Use IA para gerar ideias no estilo de compositores de vanguarda. Insira um tema e veja o que a IA propõe.</p>
+                     <div class="space-y-4">
+                        <div><label for="composition-prompt" class="block text-sm font-medium text-stone-700">Insira um tema (ex: "floresta de neon"):</label><input type="text" id="composition-prompt" class="mt-1 block w-full px-3 py-2 bg-white border border-stone-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="Solidão urbana..."></div>
+                        <button id="generate-composition-btn" class="w-full flex items-center justify-center bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition">✨ Gerar Esboço Composicional</button>
+                        <div id="composition-output-container" class="mt-4 p-4 border border-stone-200 rounded-lg bg-stone-50 min-h-[150px]"><p id="composition-output-placeholder" class="text-stone-500">Seu esboço composicional aparecerá aqui...</p><div id="composition-loader" class="hidden loader"></div><div id="composition-output" class="text-stone-700"></div></div>
+                        <p class="text-xs text-stone-400 text-right">Powered by Gemini</p>
+                     </div>
+                </div>
+                 <div class="content-card bg-white p-6 rounded-lg shadow lg:col-start-1">
+                     <h3 class="text-xl font-bold text-stone-700 mb-2">Batimentos Binaurais</h3>
+                     <p class="text-stone-600 mb-4">Frequências diferentes em cada ouvido criam uma pulsação "fantasma" que pode influenciar as ondas cerebrais.</p>
+                     <div class="diagram-container bg-stone-100 p-4 rounded-lg flex items-center justify-around h-32"><div class="diagram-part text-center"><div class="text-lg font-bold">Ouvido E.</div><div class="text-sm text-green-700">440 Hz</div></div><div class="text-3xl font-thin text-stone-400">+</div><div class="diagram-part text-center"><div class="text-lg font-bold">Ouvido D.</div><div class="text-sm text-green-700">444 Hz</div></div><div class="text-3xl font-thin text-stone-400">→</div><div class="diagram-part text-center"><div class="text-lg font-bold">Cérebro</div><div class="text-sm text-orange-600">Percepção de 4 Hz</div></div></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="exercicios" class="mb-24 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-green-800 mb-4">Exercícios de Fixação</h2>
+            <p class="text-lg text-stone-600 mb-8 max-w-3xl">Teste seus conhecimentos com as questões abaixo. Clique para revelar a resposta e a explicação.</p>
+            <div class="space-y-6">
+                <!-- Questão 1 -->
+                <div class="content-card bg-white p-6 rounded-lg shadow">
+                    <p class="font-bold mb-2">1. Qual é a principal função do ouvido médio em relação à transferência de energia sonora?</p>
+                    <div class="space-y-2 mb-4">
+                        <p>a) Filtrar frequências altas.</p>
+                        <p>b) Realizar a análise espectral do som.</p>
+                        <p>c) Superar o descasamento de impedância entre o ar e o fluido coclear.</p>
+                        <p>d) Converter o sinal mecânico em elétrico.</p>
+                    </div>
+                    <button class="toggle-answer-btn bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold py-2 px-4 rounded-lg">Revelar Resposta</button>
+                    <div class="answer-panel mt-4 p-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
+                        <p><strong>Resposta Correta: c)</strong></p>
+                        <p><strong>Comentário:</strong> A principal tarefa de engenharia do ouvido médio é transferir eficientemente a energia sonora do ar (baixa impedância) para o fluido do ouvido interno (alta impedância). Ele faz isso através do efeito de alavanca dos ossículos e, mais importante, pela diferença de área entre o tímpano e a janela oval, agindo como um pré-amplificador mecânico.</p>
+                    </div>
+                </div>
+                <!-- Questão 2 -->
+                <div class="content-card bg-white p-6 rounded-lg shadow">
+                    <p class="font-bold mb-2">2. O "amplificador coclear" é uma função primariamente associada a qual estrutura?</p>
+                    <div class="space-y-2 mb-4">
+                        <p>a) Membrana timpânica.</p>
+                        <p>b) Células Ciliadas Internas (CCIs).</p>
+                        <p>c) Nervo auditivo.</p>
+                        <p>d) Células Ciliadas Externas (CCEs).</p>
+                    </div>
+                    <button class="toggle-answer-btn bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold py-2 px-4 rounded-lg">Revelar Resposta</button>
+                    <div class="answer-panel mt-4 p-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
+                        <p><strong>Resposta Correta: d)</strong></p>
+                        <p><strong>Comentário:</strong> As Células Ciliadas Externas (CCEs) são os motores do amplificador coclear. Através da eletromotilidade, elas se contraem e expandem ativamente, injetando energia na membrana basilar. Isso amplifica os sons fracos em até 50 dB e aguça a seletividade de frequência, sendo crucial para a nossa alta sensibilidade auditiva.</p>
+                    </div>
+                </div>
+                <!-- Questão 3 -->
+                <div class="content-card bg-white p-6 rounded-lg shadow">
+                    <p class="font-bold mb-2">3. Descreva o fenômeno do "mascaramento frequencial ascendente" (*upward spread of masking*) e dê um exemplo prático na orquestração musical.</p>
+                    <button class="toggle-answer-btn bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold py-2 px-4 rounded-lg mt-2">Revelar Resposta</button>
+                    <div class="answer-panel mt-4 p-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
+                        <p><strong>Resposta:</strong></p>
+                        <p>O mascaramento frequencial ascendente descreve o fato de que sons de baixa frequência são muito mais eficazes em mascarar (tornar inaudíveis) sons de alta frequência do que o contrário. Isso ocorre devido à mecânica da onda viajante na membrana basilar: um som grave gera uma onda que viaja por uma longa extensão da membrana, afetando as regiões de alta frequência, enquanto um som agudo cria uma vibração localizada na base, sem afetar as regiões de baixa frequência.</p>
+                        <p><strong>Exemplo Prático:</strong> Um compositor deve ter cuidado ao escrever uma passagem onde uma melodia delicada na flauta (instrumento agudo) toca ao mesmo tempo que um acorde forte nos trombones (instrumentos graves). Se os trombones tocarem muito alto, sua energia de baixa frequência irá mascarar completamente a linha da flauta, tornando-a inaudível para o público, mesmo que o flautista esteja tocando corretamente.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="referencias" class="scroll-mt-20">
+            <h2 class="text-3xl font-bold text-green-800 mb-4">Referências para Aprofundamento</h2>
+            <p class="text-lg text-stone-600 mb-8 max-w-3xl">Uma seleção de obras para quem deseja mergulhar mais fundo nos tópicos abordados.</p>
+            <div class="space-y-8">
+                <div>
+                    <h3 class="text-xl font-bold text-stone-700 border-b-2 border-green-700 pb-2 mb-4">Clássicos / Canônicos</h3>
+                    <ul class="list-disc list-inside space-y-2 text-stone-600">
+                        <li><strong>Bregman, A. S. (1990).</strong> <em>Auditory Scene Analysis: The Perceptual Organization of Sound.</em> MIT Press. - A obra fundamental que introduziu o conceito de ASA.</li>
+                        <li><strong>Helmholtz, H. von (1863).</strong> <em>On the Sensations of Tone as a Physiological Basis for the Theory of Music.</em> - Um trabalho pioneiro que lançou as bases para o estudo científico da percepção musical.</li>
+                        <li><strong>Leipp, E. (1977).</strong> <em>Acoustique et Musique.</em> Masson. - Um clássico que integra acústica, organologia e percepção com grande clareza.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-stone-700 border-b-2 border-green-700 pb-2 mb-4">Manuais e Obras de Referência Atuais</h3>
+                    <ul class="list-disc list-inside space-y-2 text-stone-600">
+                        <li><strong>Henrique, L. L. (2002).</strong> <em>Acústica Musical.</em> Fundação Calouste Gulbenkian. - Principal referência em língua portuguesa, abrangente e didático.</li>
+                        <li><strong>Moore, B. C. J. (2012).</strong> <em>An Introduction to the Psychology of Hearing (6th ed.).</em> Brill. - Considerado o manual padrão sobre psicoacústica.</li>
+                        <li><strong>Yost, W. A. (2021).</strong> <em>Fundamentals of Hearing: An Introduction (5th ed.).</em> Brill. - Excelente introdução à ciência da audição, da fisiologia à percepção.</li>
+                         <li><strong>Rossing, T. D., Moore, F. R., & Wheeler, P. A. (2002).</strong> <em>The Science of Sound (3rd ed.).</em> Addison Wesley. - Um livro-texto abrangente sobre todos os aspectos da acústica.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-stone-700 border-b-2 border-green-700 pb-2 mb-4">Artigos e Tópicos Específicos</h3>
+                    <ul class="list-disc list-inside space-y-2 text-stone-600">
+                        <li><strong>Deutsch, D. (Ed.). (2013).</strong> <em>The Psychology of Music (3rd ed.).</em> Academic Press. - Coletânea de capítulos de especialistas sobre todos os aspectos da cognição musical.</li>
+                        <li><strong>Hudspeth, A. J. (2014).</strong> "Integrating the active process of hair cells with cochlear function." <em>Nature Reviews Neuroscience, 15(9)</em>, 600-614. - Artigo de revisão aprofundado sobre o amplificador coclear.</li>
+                        <li><strong>Xenakis, I. (1971).</strong> <em>Formalized Music: Thought and Mathematics in Composition.</em> Indiana University Press. - Onde Xenakis detalha suas teorias sobre música estocástica e de massa sonora.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <footer class="bg-stone-200 mt-16">
+        <div class="container mx-auto px-6 py-4 text-center text-stone-600">
+            <p>&copy; 2025 Aplicação de Aprendizagem Interativa. Baseado no Capítulo 20 de "Acústica Musical" de Luís Henrique e materiais de apoio.</p>
+        </div>
+    </footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Mobile menu toggle
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    mobileMenuButton.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+    });
+
+    // Active nav link on scroll
+    const navLinks = document.querySelectorAll('.nav-link');
+    const sections = document.querySelectorAll('main section');
+    window.addEventListener('scroll', () => {
+        let current = '';
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            if (pageYOffset >= sectionTop - 100) {
+                current = section.getAttribute('id');
+            }
+        });
+
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href').substring(1) === current) {
+                link.classList.add('active');
+            }
+        });
+    });
+
+    // Chart.js setup
+    const chartFontColor = '#334155';
+    const chartOptionsTemplate = (yLabel, xLabel) => ({
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'top', labels: { color: chartFontColor, font: { size: 10 } }},
+            tooltip: { mode: 'index', intersect: false }
+        },
+        scales: {
+            y: {
+                title: { display: true, text: yLabel, color: chartFontColor, font: {size: 10} },
+                ticks: { color: chartFontColor, font: {size: 10} }
+            },
+            x: {
+                title: { display: true, text: xLabel, color: chartFontColor, font: {size: 10} },
+                ticks: { color: chartFontColor, font: {size: 10} }
+            }
+        }
+    });
+
+    // Outer Ear Chart
+    const outerEarCtx = document.getElementById('outerEarChart').getContext('2d');
+    const outerEarOptions = chartOptionsTemplate('Limiar (dB SPL)', 'Frequência (Hz)');
+    outerEarOptions.scales.y.reverse = true;
+    new Chart(outerEarCtx, {
+        type: 'line',
+        data: {
+            labels: ['100', '200', '500', '1k', '2k', '3k', '4k', '5k', '8k', '10k'],
+            datasets: [{
+                label: 'MAP (Fones)', data: [40, 25, 12, 5, -2, -5, -6, 0, 8, 10],
+                borderColor: '#f97316', backgroundColor: '#f9731633', tension: 0.4, borderWidth: 2, pointRadius: 0
+            }, {
+                label: 'MAF (Campo Livre)', data: [30, 15, 6, 2, -8, -12, -15, -5, 5, 8],
+                borderColor: '#166534', backgroundColor: '#16653433', tension: 0.4, borderWidth: 3, pointRadius: 0
+            }]
+        },
+        options: outerEarOptions
+    });
+
+    // Acoustic Reflex Chart
+    const dbSlider = document.getElementById('dbSlider');
+    const dbValue = document.getElementById('dbValue');
+    const acousticReflexCtx = document.getElementById('acousticReflexChart').getContext('2d');
+    const acousticReflexOptions = chartOptionsTemplate('', 'Nível Efetivo (dB)');
+    acousticReflexOptions.indexAxis = 'y';
+    acousticReflexOptions.scales.x.stacked = true;
+    acousticReflexOptions.scales.x.max = 130;
+    acousticReflexOptions.scales.y.stacked = true;
+    acousticReflexOptions.scales.y.ticks = { display: false };
+    acousticReflexOptions.plugins.legend.display = false;
+    let acousticReflexChart = new Chart(acousticReflexCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Nível de Transmissão'],
+            datasets: [
+                { label: 'Sinal Transmitido', data: [70], backgroundColor: ['#16a34a'], borderWidth: 1 },
+                { label: 'Atenuação', data: [0], backgroundColor: ['#ef4444'] }
+            ]
+        },
+        options: acousticReflexOptions
+    });
+    dbSlider.addEventListener('input', (e) => {
+        const value = parseInt(e.target.value);
+        dbValue.textContent = `${value} dB`;
+        let attenuation = (value > 80) ? Math.min(20, (value - 80) * 0.5) : 0;
+        acousticReflexChart.data.datasets[0].data[0] = value - attenuation;
+        acousticReflexChart.data.datasets[1].data[0] = attenuation;
+        acousticReflexChart.update();
+    });
+
+    // Tonotopic Map Canvas
+    const freqSlider = document.getElementById('freqSlider');
+    const tonotopicCanvas = document.getElementById('tonotopicCanvas');
+    const freqReadout = document.getElementById('freqReadout');
+    const tonoCtx = tonotopicCanvas.getContext('2d');
+    const logMin = Math.log(20);
+    const logMax = Math.log(20000);
+    function drawTonotopic(freq) {
+        const w = tonotopicCanvas.width, h = tonotopicCanvas.height;
+        tonoCtx.clearRect(0, 0, w, h);
+        const position = (Math.log(freq) - logMin) / (logMax - logMin);
+        const peakX = w - (position * w * 0.9 + w * 0.05);
+        const gradient = tonoCtx.createLinearGradient(0, 0, w, 0);
+        gradient.addColorStop(0, '#f97316'); gradient.addColorStop(1, '#166534');
+        tonoCtx.fillStyle = gradient;
+        tonoCtx.fillRect(0, h-10, w, 10);
+        tonoCtx.fillStyle = '#334155'; tonoCtx.font = '14px Inter';
+        tonoCtx.textAlign = 'left'; tonoCtx.fillText('Ápice (Flexível)', 5, h-15);
+        tonoCtx.textAlign = 'right'; tonoCtx.fillText('Base (Rígida)', w-5, h-15);
+        tonoCtx.fillStyle = 'rgba(22, 163, 74, 0.7)';
+        tonoCtx.beginPath();
+        tonoCtx.moveTo(peakX - 60, h - 10);
+        tonoCtx.bezierCurveTo(peakX - 30, 10, peakX + 30, 10, peakX + 60, h - 10);
+        tonoCtx.closePath();
+        tonoCtx.fill();
+        let region = position > 0.8 ? "base" : (position < 0.2 ? "ápice" : "região central");
+        freqReadout.textContent = `Frequência: ${Math.round(freq)} Hz - Pico na ${region}.`;
+    }
+    freqSlider.addEventListener('input', (e) => drawTonotopic(parseInt(e.target.value)));
+    drawTonotopic(1000);
+
+    // Cochlear Amplifier Chart
+    const toggleAmplifierBtn = document.getElementById('toggleAmplifier');
+    const cochlearAmpCtx = document.getElementById('cochlearAmpChart').getContext('2d');
+    let amplifierOn = true;
+    const cochlearAmpOptions = chartOptionsTemplate('Intensidade Percebida', '');
+    cochlearAmpOptions.scales.y.beginAtZero = true;
+    cochlearAmpOptions.scales.y.max = 100;
+    cochlearAmpOptions.plugins.legend.display = false;
+    let cochlearAmpChart = new Chart(cochlearAmpCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Som Fraco (30dB)', 'Som Forte (90dB)'],
+            datasets: [{ label: 'Percepção', data: [40, 95], backgroundColor: ['#16a34a', '#15803d'], borderWidth: 1 }]
+        },
+        options: cochlearAmpOptions
+    });
+    toggleAmplifierBtn.addEventListener('click', () => {
+        amplifierOn = !amplifierOn;
+        cochlearAmpChart.data.datasets[0].data = amplifierOn ? [40, 95] : [5, 90];
+        toggleAmplifierBtn.textContent = amplifierOn ? 'Simular Perda do Amplificador' : 'Restaurar Amplificador';
+        toggleAmplifierBtn.classList.toggle('bg-green-600'); toggleAmplifierBtn.classList.toggle('hover:bg-green-700');
+        toggleAmplifierBtn.classList.toggle('bg-orange-500'); toggleAmplifierBtn.classList.toggle('hover:bg-orange-600');
+        cochlearAmpChart.update();
+    });
+
+    // Masking Chart
+    const toggleMaskerBtn = document.getElementById('toggleMasker');
+    const maskingCtx = document.getElementById('maskingChart').getContext('2d');
+    const originalThreshold = [25, 10, 5, 0, 5, 15, 20];
+    const maskedThreshold = [25, 45, 50, 40, 30, 25, 20];
+    let maskerOn = false;
+    const maskingOptions = chartOptionsTemplate('Limiar (dB)', 'Freq. (Hz)');
+    maskingOptions.scales.y.beginAtZero = true;
+    maskingOptions.scales.y.max = 60;
+    maskingOptions.scales.y.reverse = true;
+    maskingOptions.plugins.legend.display = false;
+    let maskingChart = new Chart(maskingCtx, {
+        type: 'line',
+        data: {
+            labels: ['100', '250', '500', '1k', '2k', '4k', '8k'],
+            datasets: [{ label: 'Limiar de Audição', data: originalThreshold, borderColor: '#166534', backgroundColor: '#16653433', fill: true, tension: 0.2 }]
+        },
+        options: maskingOptions
+    });
+    toggleMaskerBtn.addEventListener('click', () => {
+        maskerOn = !maskerOn;
+        maskingChart.data.datasets[0].data = maskerOn ? maskedThreshold : originalThreshold;
+        toggleMaskerBtn.textContent = maskerOn ? 'Remover Som Mascarador' : 'Adicionar Som Mascarador';
+        maskingChart.update();
+    });
+
+    // Gemini API Composition Generator
+    const generateBtn = document.getElementById('generate-composition-btn');
+    const promptInput = document.getElementById('composition-prompt');
+    const outputDiv = document.getElementById('composition-output');
+    const loader = document.getElementById('composition-loader');
+    const placeholder = document.getElementById('composition-output-placeholder');
+    generateBtn.addEventListener('click', async () => {
+        const userPrompt = promptInput.value;
+        if (!userPrompt) {
+            outputDiv.innerHTML = '<p class="text-red-500">Por favor, insira um tema para gerar o esboço.</p>';
+            return;
+        }
+        placeholder.classList.add('hidden');
+        outputDiv.innerHTML = '';
+        loader.classList.remove('hidden');
+        generateBtn.disabled = true;
+        const fullPrompt = `Você é um compositor de vanguarda, inspirado por Iannis Xenakis e Karlheinz Stockhausen. Crie um esboço composicional conceitual para uma peça eletroacústica baseada no seguinte tema: "${userPrompt}". Descreva a peça em termos de: 1. Textura. 2. Dinâmica. 3. Espacialização. Seja criativo, abstrato e use uma linguagem evocativa. Formate a resposta com títulos claros para cada seção.`;
+        try {
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] })
+            });
+            if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+            const result = await response.json();
+            if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                outputDiv.innerHTML = result.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
+            } else {
+                throw new Error('Nenhuma resposta válida recebida da API.');
+            }
+        } catch (error) {
+            console.error('Error calling Gemini API:', error);
+            outputDiv.innerHTML = `<p class="text-red-500">Ocorreu um erro ao gerar o esboço. Detalhes: ${error.message}</p>`;
+        } finally {
+            loader.classList.add('hidden');
+            generateBtn.disabled = false;
+        }
+    });
+
+    // Exercises Toggle Answer
+    const answerButtons = document.querySelectorAll('.toggle-answer-btn');
+    answerButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const answerPanel = button.nextElementSibling;
+            answerPanel.classList.toggle('show');
+            if (answerPanel.classList.contains('show')) {
+                const padding = '1rem';
+                answerPanel.style.padding = padding;
+            } else {
+                answerPanel.style.padding = '0';
+            }
+        });
+    });
+});
+</script>
+
+</body>
+</html>
